@@ -6,6 +6,7 @@ install_requires = [
     'gym>=0.17.2',
     'numpy>=1.10.4',
     'pillow',
+    "mujoco-py>=2.1, <2.2",
     "hydra-core==1.0.6",
     "omegaconf==2.0.6",
     "Cython<3"
