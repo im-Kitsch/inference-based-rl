@@ -65,10 +65,10 @@ def main(conf: DictConfig):
         env = wrappers.CastObservationToFloat32(env)
         # Normalize action space to [-1, 1]^n
         env = wrappers.NormalizeActionSpace(env)
-        if conf.log.monitor:
-            env = gym.wrappers.Monitor(env, os.getcwd())
-        if conf.log.render:
-            env = wrappers.Render(env)
+        # if conf.log.monitor:
+        #     env = gym.wrappers.Monitor(env, os.getcwd())
+        # if conf.log.render:
+        #     env = wrappers.Render(env)
         return env
 
     def make_env(process_idx, test):
@@ -84,10 +84,10 @@ def main(conf: DictConfig):
         env = wrappers.CastObservationToFloat32(env)
         # Normalize action space to [-1, 1]^n
         env = wrappers.NormalizeActionSpace(env)
-        if conf.log.monitor:
-            env = gym.wrappers.Monitor(env, os.getcwd())
-        if conf.log.render:
-            env = wrappers.Render(env)
+        # if conf.log.monitor:
+        #     env = gym.wrappers.Monitor(env, os.getcwd())
+        # if conf.log.render:
+        #     env = wrappers.Render(env)
         return env
 
     def make_batch_env(test):

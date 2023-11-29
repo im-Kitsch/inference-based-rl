@@ -6,6 +6,9 @@ install_requires = [
     'gym>=0.17.2',
     'numpy>=1.10.4',
     'pillow',
+    "hydra-core==1.0.6",
+    "omegaconf==2.0.6",
+    "Cython<3"
 ]
 
 setup(
