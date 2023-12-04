@@ -28,7 +28,7 @@ import pfrlx.networks as networks
 import pfrlx.policies as policies
 
 
-@hydra.main(config_path='../conf/awr/default.yaml')
+@hydra.main(version_base="1.1", config_path='../conf/awr/', config_name="default")
 def main(conf: DictConfig):
     logging.basicConfig(level=conf.log.level)
     experiments.prepare_output_dir(args={}, basedir=os.getcwd(), exp_id='')

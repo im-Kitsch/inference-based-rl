@@ -1,3 +1,4 @@
+# @package _global_
 dmc: False
 env: HalfCheetah-v2
 
