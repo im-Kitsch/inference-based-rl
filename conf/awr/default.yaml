@@ -1,5 +1,6 @@
 defaults:
   - exp: HalfCheetah-v2
+  - _self_
 
 settings: online
 
