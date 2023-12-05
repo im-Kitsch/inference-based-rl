@@ -27,6 +27,8 @@ import pfrlx.wrappers as wrappers
 import pfrlx.networks as networks
 import pfrlx.policies as policies
 
+import multiprocessing as mp
+
 
 @hydra.main(version_base="1.1", config_path='../conf/awr/', config_name="default")
 def main(conf: DictConfig):
@@ -217,20 +219,21 @@ def main(conf: DictConfig):
             )
         )
     else:
-        experiments.train_agent_batch_with_evaluation(
+        experiments.train_agent_with_evaluation(
             agent=agent,
-            env=make_batch_env(False),
-            eval_env=make_batch_env(True),
+            env=make_env(process_idx=0, test=False),
+            eval_env=make_env(process_idx=0, test=True),
             outdir=os.getcwd(),
             steps=conf.steps,
             eval_n_steps=None,
             eval_n_episodes=conf.eval.n_runs,
             eval_interval=conf.eval.interval,
-            log_interval=conf.log.interval,
-            max_episode_len=timestep_limit,
-            return_window_size=timestep_limit,
+            # log_interval=conf.log.interval,
+            train_max_episode_len=timestep_limit,
+            # return_window_size=timestep_limit,
         )
 
 
 if __name__ == "__main__":
+    # mp.set_start_method('spawn', force=True)
     main()
