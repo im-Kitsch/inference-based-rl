@@ -84,6 +84,7 @@ def main(conf: DictConfig):
         env = wrappers.CastObservationToFloat32(env)
         # Normalize action space to [-1, 1]^n
         env = wrappers.NormalizeActionSpace(env)
+        env.reset()
         # if conf.log.monitor:
         #     env = gym.wrappers.Monitor(env, os.getcwd())
         # if conf.log.render:

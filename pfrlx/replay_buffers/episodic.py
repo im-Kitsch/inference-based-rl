@@ -49,7 +49,11 @@ class EpisodicReplayBuffer(AbstractEpisodicReplayBuffer):
 
     def sample_episodes(self, n_episodes, max_len=None):
         assert len(self.episodic_memory) >= n_episodes
-        episodes = self.episodic_memory.sample(n_episodes)
+        if n_episodes == len(self.episodic_memory):
+            episodes = [epi for epi in self.episodic_memory]
+        else:
+            episodes = self.episodic_memory.sample(n_episodes)
+
         if max_len is not None:
             return [random_subseq(ep, max_len) for ep in episodes]
         else:
