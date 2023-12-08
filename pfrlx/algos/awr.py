@@ -21,26 +21,49 @@ def _add_value_to_episodes(
     dataset = list(itertools.chain.from_iterable(episodes))
 
     # Compute v_pred and next_v_pred
-    states = batch_states([b["state"] for b in dataset], device, phi)
-    next_states = batch_states([b["next_state"] for b in dataset], device, phi)
+    # states = batch_states([b["state"] for b in dataset], device, phi)
+    # next_states = batch_states([b["next_state"] for b in dataset], device, phi)
+    #
+    # if obs_normalizer:
+    #     states = obs_normalizer(states, update=False)
+    #     next_states = obs_normalizer(next_states, update=False)
+    #
+    # with torch.no_grad(), utils.evaluating(policy), utils.evaluating(vf):
+    #     distribs = policy(states)
+    #     vs_pred = vf(states)
+    #     next_vs_pred = vf(next_states)
+    #
+    #     vs_pred = vs_pred.cpu().numpy().ravel()
+    #     next_vs_pred = next_vs_pred.cpu().numpy().ravel()
 
-    if obs_normalizer:
-        states = obs_normalizer(states, update=False)
-        next_states = obs_normalizer(next_states, update=False)
+    vs_pred, next_vs_pred = [], []
+    for _epi in episodes:
+        # _st = batch_states([b["state"] for b in _epi], device, phi)
+        # _nxt_st = batch_states([b["next_state"] for b in _epi], device, phi)
+        _st = [b['state'] for b in _epi]
+        _st.append(_epi[-1]['next_state'])
+        _st = batch_states(_st, device, phi)
+        if obs_normalizer:
+            _st = obs_normalizer(_st, update=False)
+        with torch.no_grad(), utils.evaluating(policy), utils.evaluating(vf):
+            _vs_pred_all = vf(_st).cpu().numpy().ravel()
+            _vs_pred = _vs_pred_all[:-1]
+            _next_vs_pred = _vs_pred_all[1:]
+            vs_pred.append(_vs_pred)
+            next_vs_pred.append(_next_vs_pred)
 
-    with torch.no_grad(), utils.evaluating(policy), utils.evaluating(vf):
-        distribs = policy(states)
-        vs_pred = vf(states)
-        next_vs_pred = vf(next_states)
-
-        vs_pred = vs_pred.cpu().numpy().ravel()
-        next_vs_pred = next_vs_pred.cpu().numpy().ravel()
+    vs_pred = np.concatenate(vs_pred)
+    next_vs_pred = np.concatenate(next_vs_pred)
 
     for transition, v_pred, next_v_pred in zip(
         dataset, vs_pred, next_vs_pred
     ):
         transition["v_pred"] = 1/(1 - stabilizer.gamma) * v_pred
         transition["next_v_pred"] = 1/(1 - stabilizer.gamma) * next_v_pred
+
+        transition["v_pred"] = transition["v_pred"].astype(np.float32)
+        transition["next_v_pred"] = transition["next_v_pred"].astype(np.float32)
+        transition['reward'] = transition['reward'].astype(np.float32)
 
 def _make_dataset(
     episodes,
@@ -67,6 +90,8 @@ def _make_dataset(
 
     episodes = stabilizer.add_advantage_and_value_target_to_episodes(episodes)
 
+    episodes = [_epi[:-1] for _epi in episodes]   # FIXME, validate this change
+
     return list(itertools.chain.from_iterable(episodes))
 
 def _yield_minibatches(dataset, minibatch_size, num_epochs):
@@ -80,13 +105,22 @@ def _yield_minibatches(dataset, minibatch_size, num_epochs):
     for idx in reversed(masked_idxs):
         del dataset[idx]
 
+    idx_dataset = np.arange(len(dataset))
+
     while n < minibatch_size * num_epochs:
         while len(buf) < minibatch_size:
-            buf = random.sample(dataset, k=len(dataset)) + buf
+            # buf = random.sample(dataset, k=len(dataset)) + buf
+            idx_dataset_add = idx_dataset.copy()
+            np.random.shuffle(idx_dataset_add)
+            buf = buf + list(idx_dataset_add)
         assert len(buf) >= minibatch_size
-        yield buf[-minibatch_size:]
+        batch_idx = buf[:minibatch_size]
+        yield batch_idx, [dataset[_idx] for _idx in batch_idx]
+        # yield buf[-minibatch_size:]
         n += minibatch_size
-        buf = buf[:-minibatch_size]
+        # buf = buf[:-minibatch_size]
+        buf = buf[minibatch_size:]
+
 
 class AWR(AttributeSavingMixin, BatchAlgo):
     """Advantage-weighted Regression(AWR).
@@ -220,7 +254,7 @@ class AWR(AttributeSavingMixin, BatchAlgo):
 
         num_epochs = int(np.ceil(self.value_update_steps * self.update_interval / self.samples_per_iter))
 
-        for batch in _yield_minibatches(
+        for batch_idx, batch in _yield_minibatches(
             episodes, minibatch_size=self.minibatch_size, num_epochs=num_epochs
         ):
             states = self.batch_states(
@@ -271,7 +305,7 @@ class AWR(AttributeSavingMixin, BatchAlgo):
 
         num_epochs = int(np.ceil(self.policy_update_steps * self.update_interval / self.samples_per_iter))
 
-        for batch in _yield_minibatches(
+        for batch_idx, batch in _yield_minibatches(
             episodes, minibatch_size=self.minibatch_size, num_epochs=num_epochs
         ):
             states = self.batch_states(

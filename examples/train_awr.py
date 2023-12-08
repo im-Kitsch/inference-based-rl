@@ -112,6 +112,7 @@ def main(conf: DictConfig):
     obs_normalizer = networks.EmpiricalNormalization(
         obs_space.low.size, clip_threshold=5
     )
+    obs_normalizer = None
 
     obs_size = obs_space.low.size
     action_size = action_space.low.size

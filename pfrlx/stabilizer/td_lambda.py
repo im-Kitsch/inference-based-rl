@@ -1,3 +1,5 @@
+import numpy as np
+
 class TD_Lambda(object):
     def __init__(self, gamma=0.99, lambd=0.95):
         '''This calculates Lambda return for a state-value function.
@@ -16,9 +18,13 @@ class TD_Lambda(object):
         for t in reversed(episode):
             mask = t["nonterminal"]
             q_est = t["reward"] + self.gamma * mask * t["next_v_pred"]
+            q_est = q_est.astype(np.float32)
             t["v_teacher"] = q_est + self.gamma_lambd * mask * cum_td
+            t["v_teacher"] = t["v_teacher"].astype(np.float32)
             t["adv"] = t["v_teacher"] - t["v_pred"]
+            t['adv'] = t['adv'].astype(np.float32)
             cum_td = t["v_teacher"] - t["v_pred"]
+            cum_td = cum_td.astype(np.float32)
 
     def add_advantage_and_value_target_to_episodes(self, episodes):
         """Add advantage and value target values to a list of episodes."""
